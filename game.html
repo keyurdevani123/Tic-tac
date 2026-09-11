@@ -230,6 +230,11 @@ background:#64748b;
 color:white;
 }
 
+.danger{
+background:#dc2626;
+color:white;
+}
+
 .history{
 margin-top:20px;
 text-align:left;
@@ -342,6 +347,7 @@ Player 1 (X) Turn
 
 <div class="controls">
 <button class="primary" onclick="resetGame()">🔄 New Game</button>
+<button class="danger" onclick="resetEverything()">🗑 Reset All</button>
 <button class="secondary" onclick="undoMove()">↩ Undo</button>
 <button class="secondary" id="botToggle" onclick="toggleBot()">🤖 Bot: On</button>
 <button class="secondary" onclick="toggleTheme()">🌙 Theme</button>
@@ -624,6 +630,30 @@ function resetGame(){
     turnText.textContent = "Player 1 (X) Turn";
 }
 
+function resetEverything(){
+
+    if(onlineMode && onlineSocket && onlineSocket.readyState === WebSocket.OPEN){
+        onlineSocket.send(JSON.stringify({type:"reset"}));
+        onlineSocket.close();
+    }
+
+    localStorage.clear();
+    scoreX=0;
+    scoreO=0;
+    scoreDraw=0;
+    onlineSocket=null;
+    onlineMode=false;
+    onlineMark="";
+    botEnabled=true;
+    document.getElementById("botToggle").textContent="🤖 Bot: On";
+    document.getElementById("roomCode").value="";
+    onlineStatus("Local game with bot");
+    document.getElementById("winnerModal").style.display="none";
+    updateScores();
+    resetLocalBoard();
+    turnText.textContent="Player 1 (X) Turn";
+}
+
 function undoMove(){
 
     if(history.length === 0 || gameOver) return;
@@ -709,6 +739,7 @@ function createOnlineGame(){
 
     botEnabled=false;
     const socket=connectOnline();
+    if(socket.readyState === WebSocket.CLOSED) return;
     const send=() => socket.send(JSON.stringify({type:"create"}));
     if(socket.readyState === WebSocket.OPEN) send();
     else socket.addEventListener("open", send, {once:true});
@@ -721,6 +752,7 @@ function joinOnlineGame(){
 
     botEnabled=false;
     const socket=connectOnline();
+    if(socket.readyState === WebSocket.CLOSED) return;
     const send=() => socket.send(JSON.stringify({type:"join",room}));
     if(socket.readyState === WebSocket.OPEN) send();
     else socket.addEventListener("open", send, {once:true});
